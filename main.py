@@ -17,9 +17,10 @@ import json
 
 app = FastAPI()
 
-IMAGES_DIR = "./media/ipad_pics"
+IMAGES_DIR = "/app/media/ipad_pics"
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.mount("/media", StaticFiles(directory="media"), name="media")  # for images
+app.mount("/media", StaticFiles(directory=IMAGES_DIR), name="media")  # for images
 
 templates = Jinja2Templates(directory="templates")
 
