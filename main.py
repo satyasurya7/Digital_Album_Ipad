@@ -82,6 +82,14 @@ async def photo_album(request: Request):
 
     images_json = json.dumps(images_data)  # safe JSON serialization
 
+    # Defaults for first image info
+    first_image = images_data[0]['filename'] if images_data else ''
+    first_datetime = images_data[0]['datetime'] if images_data else 'Unknown'
+    if images_data and images_data[0]['latitude'] is not None:
+        first_location = f"{images_data[0]['latitude']}, {images_data[0]['longitude']}"
+    else:
+        first_location = "Unknown"
+
     html = """
     <html>
     <head>
@@ -108,18 +116,18 @@ async def photo_album(request: Request):
           <button type="submit">Upload Photo</button>
       </form>
       <script>
-        const images = %s;
+        const images = {images_json};
         let currentIndex = 0;
         const slideshow = document.getElementById('slideshow');
         const infoBox = document.getElementById('infoBox');
 
         function showNextImage() {{
-          currentIndex = (currentIndex + 1) %% images.length;
+          currentIndex = (currentIndex + 1) % images.length;
           const image = images[currentIndex];
           slideshow.src = '/static/' + image.filename;
           infoBox.innerHTML = `
             <div><b>Date & Time:</b> ${image.datetime}</div>
-            <div><b>Location:</b> ${image.latitude ? image.latitude + ', ' + image.longitude : 'Unknown'}</div>
+            <div><b>Location:</b> ${image.latitude !== null ? image.latitude + ', ' + image.longitude : 'Unknown'}</div>
           `;
         }}
 
@@ -129,21 +137,14 @@ async def photo_album(request: Request):
       </script>
     </body>
     </html>
-    """
-
-    # If no images, provide safe defaults
-    first_image = images_data[0]['filename'] if images_data else ''
-    first_datetime = images_data[0]['datetime'] if images_data else 'Unknown'
-    if images_data and images_data[0]['latitude']:
-        first_location = f"{images_data[0]['latitude']}, {images_data[0]['longitude']}"
-    else:
-        first_location = "Unknown"
-
-    return HTMLResponse(content=html % images_json.format(
+    """.format(
+        images_json=images_json,
         first_image=first_image,
         first_datetime=first_datetime,
         first_location=first_location
-    ))
+    )
+
+    return HTMLResponse(content=html)
 
 
 @app.post("/upload", response_class=HTMLResponse)
