@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Digital Album with Geo & Date</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data" class="upload-form collapsed">
+    <input type="file" name="file" accept="image/*" required />
+    <button type="submit">Upload Photo</button>
+  </form>
+  <button id="toggleUploadBtn" class="toggle-upload-btn">Upload ▼</button>
+
+  <img id="slideshow" src="" alt="Photo Album Image" />
+
+  <div id="infoBox">
+    <div><b>Date & Time:</b> <span id="dateTime">Loading...</span></div>
+    <div><b>Location:</b> <span id="location">Loading...</span></div>
+  </div>
+
+  <div id="navArrows">
+    <button id="prevBtn">&#10094;</button>
+    <button id="nextBtn">&#10095;</button>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

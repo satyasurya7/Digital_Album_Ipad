@@ -1,0 +1,90 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: black;
+  color: white;
+  text-align: center;
+  overflow: hidden;
+}
+
+#slideshow {
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+
+#infoBox {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.6);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 280px;
+  text-align: left;
+  z-index: 10;
+}
+
+.upload-form {
+  position: fixed;
+  top: 50px;
+  right: 10px;
+  z-index: 10;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: max-height 0.3s ease;
+  overflow: hidden;
+  max-height: 0;
+}
+
+.upload-form.expanded {
+  max-height: 150px;
+}
+
+.toggle-upload-btn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 11;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: white;
+  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#navArrows {
+  position: fixed;
+  top: 50%;
+  width: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#prevBtn, #nextBtn {
+  pointer-events: all;
+  background: rgba(0,0,0,0.5);
+  border: none;
+  color: white;
+  font-size: 40px;
+  padding: 10px;
+  border-radius: 6px;
+  user-select: none;
+  cursor: pointer;
+}
+
+#prevBtn {
+  position: absolute;
+  left: 10px;
+  transform: translateY(-50%);
+}
+
+#nextBtn {
+  position: absolute;
+  right: 10px;
+  transform: translateY(-50%);
+}
