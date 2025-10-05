@@ -1,0 +1,9 @@
+version: '3.8'
+services:
+  album:
+    build: .
+    ports:
+      - "8000:80"
+    volumes:
+      - /media/crazy7/immich_pics:/media/crazy7/immich_pics
+
