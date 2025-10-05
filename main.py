@@ -6,9 +6,9 @@ import shutil
 
 app = FastAPI()
 
-IMAGES_DIR = "/media/crazy7/immich_pics"
+IMAGES_DIR = "/media/crazy7/ipad_pics"
 
-app.mount("/static", StaticFiles(directory="/media/crazy7/immich_pics"), name="static")
+app.mount("/static", StaticFiles(directory="/media/crazy7/ipad_pics"), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)

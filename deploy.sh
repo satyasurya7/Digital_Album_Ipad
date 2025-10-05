@@ -17,5 +17,5 @@ docker run -d \
   --restart=unless-stopped \
   --name $CONTAINER_NAME \
   -p 7373:80 \
-  -v /media/crazy7/immich_pics:/media/crazy7/immich_pics \
+  -v /media/crazy7/ipad_pics:/media/crazy7/ipad_pics \
   $IMAGE_NAME
