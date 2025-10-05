@@ -6,11 +6,26 @@ import shutil
 from PIL import Image
 import piexif
 import json
+import requests
+from functools import lru_cache
 
 app = FastAPI()
 
 IMAGES_DIR = "/media/crazy7/ipad_pics"
 app.mount("/static", StaticFiles(directory=IMAGES_DIR), name="static")
+
+@lru_cache(maxsize=256)
+def reverse_geocode(lat, lon):
+    url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=10&addressdetails=1"
+    headers = {"User-Agent": "DigitalAlbum/1.0"}
+    try:
+        res = requests.get(url, headers=headers, timeout=5)
+        if res.status_code == 200:
+            data = res.json()
+            return data.get("address", {}).get("city") or data.get("address", {}).get("town") or data.get("address", {}).get("village") or data.get("display_name")
+    except Exception:
+        return None
+    return None
 
 
 def get_exif_data(img_path):
@@ -79,22 +94,20 @@ async def photo_album(request: Request):
         exif = get_exif_data(path)
         lat, lon = get_lat_lon(exif)
         datetime_str = get_datetime(exif)
+        location_name = reverse_geocode(lat, lon) if lat and lon else None
         images_data.append({
             "filename": f,
             "latitude": lat,
             "longitude": lon,
-            "datetime": datetime_str or "Unknown"
+            "datetime": datetime_str or "Unknown",
+            "location": location_name or "Unknown"
         })
 
-    images_json = json.dumps(images_data)  # safe JSON serialization
+    images_json = json.dumps(images_data)
 
-    # Defaults for first image info
     first_image = images_data[0]['filename'] if images_data else ''
     first_datetime = images_data[0]['datetime'] if images_data else 'Unknown'
-    if images_data and images_data[0]['latitude'] is not None:
-        first_location = f"{images_data[0]['latitude']}, {images_data[0]['longitude']}"
-    else:
-        first_location = "Unknown"
+    first_location = images_data[0]['location'] if images_data else 'Unknown'
 
     html = """
     <html>
@@ -102,44 +115,128 @@ async def photo_album(request: Request):
       <title>Digital Album with Geo & Date</title>
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <style>
-        body {{ margin: 10px; font-family: Arial, sans-serif; background: #222; color: white; text-align:center; }}
-        #slideshow {{ max-width: 90vw; max-height: 70vh; border-radius: 8px; }}
-        #infoBox {{ position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 6px; font-size: 14px; max-width: 280px; text-align: left; }}
-        #uploadForm {{ margin-top: 20px; }}
-        input[type="file"] {{ margin: 10px 0; }}
+        body {{ margin: 0; font-family: Arial, sans-serif; background: black; color: white; text-align:center; overflow: hidden; }}
+        #slideshow {{ width: 100vw; height: 100vh; object-fit: contain; }}
+        #infoBox {{
+          position: fixed;
+          bottom: 10px;
+          right: 10px;
+          background: rgba(0,0,0,0.6);
+          padding: 8px 14px;
+          border-radius: 6px;
+          font-size: 14px;
+          max-width: 280px;
+          text-align: left;
+          z-index: 10;
+        }}
+        #uploadForm {{
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          z-index: 10;
+          background: rgba(0,0,0,0.6);
+          padding: 6px 12px;
+          border-radius: 6px;
+        }}
+        input[type="file"] {{ margin: 10px 5px 0 0; }}
         button {{ padding: 6px 12px; font-size: 16px; cursor: pointer; }}
+        /* Arrow buttons */
+        #navArrows {{
+          position: fixed;
+          top: 50%;
+          width: 100%;
+          pointer-events: none;
+          z-index: 10;
+        }}
+        #prevBtn, #nextBtn {{
+          pointer-events: all;
+          background: rgba(0,0,0,0.5);
+          border: none;
+          color: white;
+          font-size: 40px;
+          padding: 10px 20px;
+          border-radius: 6px;
+          user-select: none;
+          cursor: pointer;
+        }}
+        #prevBtn {{ position: absolute; left: 10px; transform: translateY(-50%); }}
+        #nextBtn {{ position: absolute; right: 10px; transform: translateY(-50%); }}
       </style>
     </head>
     <body>
-      <h2>Digital Photo Album</h2>
-      <img id="slideshow" src="/static/{first_image}" alt="Photo Album Image">
-      <div id="infoBox">
-        <div><b>Date & Time:</b> {first_datetime}</div>
-        <div><b>Location:</b> {first_location}</div>
-      </div>
       <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
           <input type="file" name="file" accept="image/*" required>
           <button type="submit">Upload Photo</button>
       </form>
+
+      <img id="slideshow" src="/static/{first_image}" alt="Photo Album Image">
+
+      <div id="infoBox">
+        <div><b>Date & Time:</b> {first_datetime}</div>
+        <div><b>Location:</b> {first_location}</div>
+      </div>
+
+      <div id="navArrows">
+        <button id="prevBtn">&#10094;</button>
+        <button id="nextBtn">&#10095;</button>
+      </div>
+
       <script>
         const images = {images_json};
         let currentIndex = 0;
         const slideshow = document.getElementById('slideshow');
         const infoBox = document.getElementById('infoBox');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let slideTimer;
 
-        function showNextImage() {{
-          currentIndex = (currentIndex + 1) % images.length;
+        function updateSlide() {{
           const image = images[currentIndex];
-          slideshow.src = '/static/' + image.filename;
+          slideshow.src = '/static/' + image.filename + '?t=' + new Date().getTime();
           infoBox.innerHTML = `
             <div><b>Date & Time:</b> ${{image.datetime}}</div>
-            <div><b>Location:</b> ${{image.latitude !== null ? image.latitude + ', ' + image.longitude : 'Unknown'}}</div>
+            <div><b>Location:</b> ${{image.location || 'Unknown'}}</div>
           `;
         }}
 
-        if(images.length > 1) {{
-          setInterval(showNextImage, 10000);
+        function showNextImage() {{
+          currentIndex = (currentIndex + 1) % images.length;
+          updateSlide();
         }}
+
+        function showPrevImage() {{
+          currentIndex = (currentIndex - 1 + images.length) % images.length;
+          updateSlide();
+        }}
+
+        function startSlideshow() {{
+          slideTimer = setInterval(showNextImage, 10000);
+        }}
+
+        function stopSlideshow() {{
+          clearInterval(slideTimer);
+        }}
+
+        function resetSlideshowTimer() {{
+          stopSlideshow();
+          slideTimer = setTimeout(startSlideshow, 10000);
+        }}
+
+        prevBtn.addEventListener('click', () => {{
+          showPrevImage();
+          resetSlideshowTimer();
+        }});
+
+        nextBtn.addEventListener('click', () => {{
+          showNextImage();
+          resetSlideshowTimer();
+        }});
+
+        // Start slideshow if more than one image exists
+        if(images.length > 1) {{
+          startSlideshow();
+        }}
+
       </script>
     </body>
     </html>
