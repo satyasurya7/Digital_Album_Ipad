@@ -1,7 +1,7 @@
 #!/bin/bash
 
-IMAGE_NAME=fastapi-album
-CONTAINER_NAME=fastapi-album-app
+IMAGE_NAME=ipad-Digital-Album
+CONTAINER_NAME=ipad-Digital-Album-app
 
 # Build the image
 docker build -t $IMAGE_NAME .
@@ -15,6 +15,6 @@ docker rmi $IMAGE_NAME:old 2>/dev/null || true
 # Run the new container, mapping image directory
 docker run -d \
   --name $CONTAINER_NAME \
-  -p 8000:80 \
+  -p 7373:80 \
   -v /media/crazy7/immich_pics:/media/crazy7/immich_pics \
   $IMAGE_NAME
