@@ -1,7 +1,7 @@
 #!/bin/bash
 
-IMAGE_NAME=ipad-Digital-Album
-CONTAINER_NAME=ipad-Digital-Album-app
+IMAGE_NAME=ipad-digital-album
+CONTAINER_NAME=ipad-digital-album-app
 
 # Build the image
 docker build -t $IMAGE_NAME .
