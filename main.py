@@ -17,7 +17,7 @@ import json
 
 app = FastAPI()
 
-IMAGES_DIR = "/app/media/ipad_pics"
+IMAGES_DIR = "/media/crazy7/ipad_pics"
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/media", StaticFiles(directory=IMAGES_DIR), name="media")  # for images

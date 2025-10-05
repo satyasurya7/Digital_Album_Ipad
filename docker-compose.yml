@@ -5,5 +5,5 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - /media/crazy7/ipad_pics:/app/media/ipad_pics
+      - /media/crazy7/ipad_pics:/media/crazy7/ipad_pics 
 
