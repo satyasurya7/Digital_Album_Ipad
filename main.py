@@ -5,6 +5,7 @@ import os
 import shutil
 from PIL import Image
 import piexif
+import json
 
 app = FastAPI()
 
@@ -57,7 +58,6 @@ def get_lat_lon(exif_dict):
 def get_datetime(exif_dict):
     if not exif_dict:
         return None
-    # DateTimeOriginal tag in EXIF
     datetime_bytes = exif_dict.get('Exif', {}).get(piexif.ExifIFD.DateTimeOriginal)
     if datetime_bytes:
         return datetime_bytes.decode()
@@ -80,8 +80,9 @@ async def photo_album(request: Request):
             "datetime": datetime_str or "Unknown"
         })
 
-    images_json = str(images_data).replace("'", '"')
-    html = f"""
+    images_json = json.dumps(images_data)  # safe JSON serialization
+
+    html = """
     <html>
     <head>
       <title>Digital Album with Geo & Date</title>
@@ -97,24 +98,23 @@ async def photo_album(request: Request):
     </head>
     <body>
       <h2>Digital Photo Album</h2>
-      <img id="slideshow" src="/static/{images_data[0]['filename'] if images_data else ''}" alt="Photo Album Image">
+      <img id="slideshow" src="/static/{first_image}" alt="Photo Album Image">
       <div id="infoBox">
-        <div><b>Date & Time:</b> {images_data[0]['datetime'] if images_data else 'Unknown'}</div>
-        <div><b>Location:</b> <span id="location">{f"{images_data[0]['latitude']}, {images_data[0]['longitude']}" if images_data and images_data[0]['latitude'] else "Unknown"}</span></div>
+        <div><b>Date & Time:</b> {first_datetime}</div>
+        <div><b>Location:</b> {first_location}</div>
       </div>
       <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
           <input type="file" name="file" accept="image/*" required>
           <button type="submit">Upload Photo</button>
       </form>
       <script>
-        const images = {images_json};
+        const images = %s;
         let currentIndex = 0;
         const slideshow = document.getElementById('slideshow');
         const infoBox = document.getElementById('infoBox');
-        const locationSpan = document.getElementById('location');
 
         function showNextImage() {{
-          currentIndex = (currentIndex + 1) % images.length;
+          currentIndex = (currentIndex + 1) %% images.length;
           const image = images[currentIndex];
           slideshow.src = '/static/' + image.filename;
           infoBox.innerHTML = `
@@ -124,13 +124,26 @@ async def photo_album(request: Request):
         }}
 
         if(images.length > 1) {{
-          setInterval(showNextImage, 10000);  // 10 seconds
+          setInterval(showNextImage, 10000);
         }}
       </script>
     </body>
     </html>
     """
-    return HTMLResponse(content=html)
+
+    # If no images, provide safe defaults
+    first_image = images_data[0]['filename'] if images_data else ''
+    first_datetime = images_data[0]['datetime'] if images_data else 'Unknown'
+    if images_data and images_data[0]['latitude']:
+        first_location = f"{images_data[0]['latitude']}, {images_data[0]['longitude']}"
+    else:
+        first_location = "Unknown"
+
+    return HTMLResponse(content=html % images_json.format(
+        first_image=first_image,
+        first_datetime=first_datetime,
+        first_location=first_location
+    ))
 
 
 @app.post("/upload", response_class=HTMLResponse)
@@ -138,6 +151,7 @@ async def upload_photo(file: UploadFile = File(...)):
     save_path = os.path.join(IMAGES_DIR, file.filename)
     with open(save_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+
     return """
     <html>
     <body style='font-family: Arial, sans-serif; text-align:center; padding:20px; background:#222; color:#eee;'>
