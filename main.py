@@ -16,7 +16,7 @@ app.mount("/static", StaticFiles(directory=IMAGES_DIR), name="static")
 
 @lru_cache(maxsize=256)
 def reverse_geocode(lat, lon):
-    url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=10&addressdetails=1"
+    url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={0}&lon={1}&zoom=10&addressdetails=1".format(lat, lon)
     headers = {"User-Agent": "DigitalAlbum/1.0"}
     try:
         res = requests.get(url, headers=headers, timeout=5)
@@ -182,21 +182,19 @@ async def photo_album(request: Request):
       </div>
 
       <script>
-        const images = {images_json};
-        let currentIndex = 0;
-        const slideshow = document.getElementById('slideshow');
-        const infoBox = document.getElementById('infoBox');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        let slideTimer;
+        var images = {images_json};
+        var currentIndex = 0;
+        var slideshow = document.getElementById('slideshow');
+        var infoBox = document.getElementById('infoBox');
+        var prevBtn = document.getElementById('prevBtn');
+        var nextBtn = document.getElementById('nextBtn');
+        var slideTimer;
 
         function updateSlide() {{
-          const image = images[currentIndex];
+          var image = images[currentIndex];
           slideshow.src = '/static/' + image.filename + '?t=' + new Date().getTime();
-          infoBox.innerHTML = `
-            <div><b>Date & Time:</b> ${{image.datetime}}</div>
-            <div><b>Location:</b> ${{image.location || 'Unknown'}}</div>
-          `;
+          infoBox.innerHTML = '<div><b>Date & Time:</b> ' + image.datetime + '</div>' +
+                              '<div><b>Location:</b> ' + (image.location || 'Unknown') + '</div>';
         }}
 
         function showNextImage() {{
@@ -211,32 +209,33 @@ async def photo_album(request: Request):
 
         function startSlideshow() {{
           slideTimer = setInterval(showNextImage, 10000);
+          console.log('Slideshow started');
         }}
 
         function stopSlideshow() {{
           clearInterval(slideTimer);
+          console.log('Slideshow stopped');
         }}
 
         function resetSlideshowTimer() {{
           stopSlideshow();
           slideTimer = setTimeout(startSlideshow, 10000);
+          console.log('Slideshow reset timer');
         }}
 
-        prevBtn.addEventListener('click', () => {{
+        prevBtn.addEventListener('click', function() {{
           showPrevImage();
           resetSlideshowTimer();
         }});
 
-        nextBtn.addEventListener('click', () => {{
+        nextBtn.addEventListener('click', function() {{
           showNextImage();
           resetSlideshowTimer();
         }});
 
-        // Start slideshow if more than one image exists
         if(images.length > 1) {{
           startSlideshow();
         }}
-
       </script>
     </body>
     </html>
