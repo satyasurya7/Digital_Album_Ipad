@@ -14,6 +14,7 @@ docker rmi $IMAGE_NAME:old 2>/dev/null || true
 
 # Run the new container, mapping image directory
 docker run -d \
+  --restart=unless-stopped \
   --name $CONTAINER_NAME \
   -p 7373:80 \
   -v /media/crazy7/immich_pics:/media/crazy7/immich_pics \
