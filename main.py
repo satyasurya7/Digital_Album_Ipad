@@ -23,10 +23,13 @@ def get_exif_data(img_path):
 
 
 def _convert_to_degrees(value):
-    d = value[0][0] / value[0][1]
-    m = value[1][0] / value[1][1]
-    s = value[2][0] / value[2][1]
-    return d + (m / 60.0) + (s / 3600.0)
+    try:
+        d = value[0][0] / value[0][1]
+        m = value[1][0] / value[1][1]
+        s = value[2][0] / value[2][1]
+        return d + (m / 60.0) + (s / 3600.0)
+    except Exception:
+        return None
 
 
 def get_lat_lon(exif_dict):
@@ -44,13 +47,13 @@ def get_lat_lon(exif_dict):
 
     if gps_latitude and gps_latitude_ref and gps_longitude and gps_longitude_ref:
         lat = _convert_to_degrees(gps_latitude)
+        lon = _convert_to_degrees(gps_longitude)
+        if lat is None or lon is None:
+            return None, None
         if gps_latitude_ref != b'N':
             lat = -lat
-
-        lon = _convert_to_degrees(gps_longitude)
         if gps_longitude_ref != b'E':
             lon = -lon
-
         return round(lat, 6), round(lon, 6)
     return None, None
 
@@ -60,7 +63,10 @@ def get_datetime(exif_dict):
         return None
     datetime_bytes = exif_dict.get('Exif', {}).get(piexif.ExifIFD.DateTimeOriginal)
     if datetime_bytes:
-        return datetime_bytes.decode()
+        try:
+            return datetime_bytes.decode()
+        except Exception:
+            return None
     return None
 
 
@@ -101,7 +107,7 @@ async def photo_album(request: Request):
         #infoBox {{ position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); padding: 8px 14px; border-radius: 6px; font-size: 14px; max-width: 280px; text-align: left; }}
         #uploadForm {{ margin-top: 20px; }}
         input[type="file"] {{ margin: 10px 0; }}
-        input[type="submit"] {{ padding: 6px 12px; font-size: 16px; cursor: pointer; }}
+        button {{ padding: 6px 12px; font-size: 16px; cursor: pointer; }}
       </style>
     </head>
     <body>
@@ -126,8 +132,8 @@ async def photo_album(request: Request):
           const image = images[currentIndex];
           slideshow.src = '/static/' + image.filename;
           infoBox.innerHTML = `
-            <div><b>Date & Time:</b> ${image.datetime}</div>
-            <div><b>Location:</b> ${image.latitude !== null ? image.latitude + ', ' + image.longitude : 'Unknown'}</div>
+            <div><b>Date & Time:</b> ${{image.datetime}}</div>
+            <div><b>Location:</b> ${{image.latitude !== null ? image.latitude + ', ' + image.longitude : 'Unknown'}}</div>
           `;
         }}
 
